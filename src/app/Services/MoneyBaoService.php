@@ -146,10 +146,10 @@ class MoneyBaoService extends BaseService
 
         switch ($wallet_type) {
             case WalletType::balance:
-                if ($user->moneyBao->usdt_balance > 0) {
+                if ($user->moneyBao->balance > 0) {
                     //最后存入时间
                     $last_time = $user->moneyBao->last_time ?: $user->moneyBao->last_grant_time;
-                    if (Carbon::make($last_time)->addDays()->lte(now()) && !in_array($user->moneyBao->balance_status, [MoneyBaoStatusType::stop])) {
+                    if (!in_array($user->moneyBao->balance_status, [MoneyBaoStatusType::stop])) {
                         $this->grantInterestByType($user->moneyBao, WalletType::balance);
                         return;
                     }
@@ -160,7 +160,7 @@ class MoneyBaoService extends BaseService
                 if ($user->moneyBao->usdt_balance > 0) {
                     //最后存入时间
                     $usdt_last_time = $user->moneyBao->usdt_last_time ?: $user->moneyBao->last_grant_time;
-                    if (Carbon::make($usdt_last_time)->addDays()->lte(now()) && !in_array($user->moneyBao->usdt_status, [MoneyBaoStatusType::stop])) {
+                    if (!in_array($user->moneyBao->usdt_status, [MoneyBaoStatusType::stop])) {
                         $this->grantInterestByType($user->moneyBao, WalletType::usdt);
                         return;
                     }

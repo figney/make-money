@@ -29,6 +29,7 @@ use App\Services\Pay\FPayTHBService;
 use App\Services\Pay\IPayIndianService;
 use App\Services\Pay\JstPayService;
 use App\Services\Pay\PaytmCashService;
+use App\Services\Pay\Usdt1788Service;
 use App\Services\Pay\YudrsuService;
 use Godruoyi\Snowflake\Snowflake;
 use Illuminate\Database\Query\Builder;
@@ -156,6 +157,9 @@ class WithdrawService extends BaseService
             case PlatformType::JstPay:
                 JstPayService::make()->payOut($userWithdrawOrder, $channel);
                 break;
+            case PlatformType::USDT1788:
+                Usdt1788Service::make()->payOut($userWithdrawOrder, $channel);
+                break;
             default:
                 abort(400, "当前代付渠道暂未接入");
                 break;
@@ -206,20 +210,20 @@ class WithdrawService extends BaseService
                 //添加用户提现次数
                 $user->increment('withdraw_count');//用户表提现次数
                 //用户钱包表统计
-                $user->walletCount()->increment('balance_withdraw', $userWithdrawOrder->amount);
+                $user->walletCount()->increment('balance_withdraw', $userWithdrawOrder->actual_amount);
                 //用户关系表统计
                 $user->invite()->increment('withdraw_count');//提现次数
-                $user->invite()->increment('balance_withdraw', $userWithdrawOrder->amount);//提现金额
+                $user->invite()->increment('balance_withdraw', $userWithdrawOrder->actual_amount);//提现金额
             }
 
             if ($userWithdrawOrder->wallet_type === WalletType::usdt) {
                 //添加用户提现次数
                 $user->increment('withdraw_count');//用户表提现次数
                 //用户钱包表统计
-                $user->walletCount()->increment('usdt_balance_withdraw', $userWithdrawOrder->amount);
+                $user->walletCount()->increment('usdt_balance_withdraw', $userWithdrawOrder->actual_amount);
                 //用户关系表统计
                 $user->invite()->increment('withdraw_count');//提现次数
-                $user->invite()->increment('usdt_balance_withdraw', $userWithdrawOrder->amount);//提现金额
+                $user->invite()->increment('usdt_balance_withdraw', $userWithdrawOrder->actual_amount);//提现金额
             }
             \DB::commit();
             //触发提现成功钩子

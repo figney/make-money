@@ -48,7 +48,6 @@ class UserService extends BaseService
         \DB::beginTransaction();
         $channel_id = data_get($data, 'channel_id', 0);
         $link_id = data_get($data, 'link_id', 0);
-
         $source = data_get($data, 'source');
         $ip = $this->getIP();
         $invite_id = data_get($data, 'invite_id', 0);
@@ -67,7 +66,6 @@ class UserService extends BaseService
 
         if ($source !== "ad") abort_if($invite_id <= 0, 400, Lang('邀请人不存在'));
 
-
         $national_number = data_get($data, 'national_number');
 
         $name = data_get($data, 'name');
@@ -83,7 +81,7 @@ class UserService extends BaseService
             'channel_id' => $channel_id,
             'link_id' => $link_id,
             'invite_id' => $invite_id,
-            'source' => $source,
+            'source' => data_get($data, 'source'),
             'country_code' => data_get($data, 'country_code'),
             'ip' => $ip,
             'imei' => $this->getIMEI(),
@@ -136,13 +134,13 @@ class UserService extends BaseService
         $ip_count = Device::query()->where('ip', $ip)->where('user_id', '>', 0)->count();
 
         if (\App::isProduction()) {
-            abort_if($ip_count >= 3, 400, Lang('ERROR'));
+            abort_if($ip_count >= 3, 400, 'error 1');
         }
 
 
         $count = Device::query()->where('imei', $imei)->where('user_id', '>', 0)->count();
 
-        abort_if($count >= Setting('device_reg_max'), 400, Lang('ERROR'));
+        abort_if($count >= Setting('device_reg_max'), 400, 'error 2');
 
     }
 

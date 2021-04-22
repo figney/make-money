@@ -6,10 +6,13 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Enums\TaskTargetType;
 use App\Enums\UserHookType;
+use App\Enums\WalletType;
+use App\Enums\WithdrawOrderStatusType;
 use App\Http\Controllers\Api\ApiController;
 use App\Http\Resources\TaskResource;
 use App\Models\Task;
 use App\Services\TaskService;
+use Carbon\Carbon;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -62,16 +65,36 @@ class TaskController extends ApiController
 
         $user = $this->user();
 
+        $all_withdraw = 0;
+        $day_all_withdraw = 0;
         if ($user) {
 
             $orm->with(['userTask' => fn($q) => $q->where('user_id', $user->id)]);
+
+
+            $balance_withdraw = (float)$user->walletCount->balance_withdraw;
+            $usdt_balance_withdraw = (float)$user->walletCount->usdt_balance_withdraw;
+            //用户总提现金额
+            $all_withdraw = $balance_withdraw + ($usdt_balance_withdraw * (float)Setting('usdt_money_rate'));
+
+            $day_balance_withdraw = (float)$user->withdrawOrders()
+                ->where('created_at', '>=', Carbon::today())
+                ->where('wallet_type', WalletType::balance)
+                ->whereIn('order_status', [WithdrawOrderStatusType::CheckSuccess, WithdrawOrderStatusType::Checking, WithdrawOrderStatusType::Paying])
+                ->sum('actual_amount');
+            $day_usdt_balance_withdraw = (float)$user->withdrawOrders()
+                ->where('created_at', '>=', Carbon::today())
+                ->where('wallet_type', WalletType::usdt)
+                ->whereIn('order_status', [WithdrawOrderStatusType::CheckSuccess, WithdrawOrderStatusType::Checking, WithdrawOrderStatusType::Paying])
+                ->sum('actual_amount');
+            //用户总提现金额
+            $day_all_withdraw = $day_balance_withdraw + ($day_usdt_balance_withdraw * (float)Setting('usdt_money_rate'));
         }
 
 
         $list = $orm->get()->filter(function (Task $task) use ($user) {
 
             if (!$user) return true;
-
 
             //未充值用户
             if ($user->recharge_count <= 0 && $task->user_type == 2) {
@@ -85,7 +108,6 @@ class TaskController extends ApiController
 
             $userTask = $task->userTask;
 
-
             //没触发过
             if (!$userTask) return true;
             //允许重复
@@ -95,6 +117,25 @@ class TaskController extends ApiController
 
             return false;
 
+        })->map(function (Task $task) use ($day_all_withdraw, $all_withdraw, $user) {
+            if (!$user) return $task;
+
+            if ($task->hook == UserHookType::Recharge && $task->userTask) {
+                //判断提现是否参与
+                $t_all_withdraw = 0;
+                $t_day_all_withdraw = 0;
+                if ($task->check_withdraw) {
+                    //用户总提现金额
+                    $t_all_withdraw = $all_withdraw;
+                    $t_day_all_withdraw = $day_all_withdraw;
+                }
+
+                if ($task->task_target == TaskTargetType::Accomplish) $task->userTask->target_condition = $task->userTask->target_condition - $t_all_withdraw;
+                if (in_array($task->task_target, [TaskTargetType::ContinuousDay, TaskTargetType::ContinuousDayIncrease])) $task->userTask->target_condition = $task->userTask->target_condition - $t_day_all_withdraw;
+
+            }
+
+            return $task;
         })->all();
 
         $res['list'] = TaskResource::collection($list);

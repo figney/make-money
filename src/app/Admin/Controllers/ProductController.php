@@ -38,6 +38,7 @@ class ProductController extends AdminController
             $grid->column('all_amount', '总规模')->sortable()->money();
             $grid->column('order')->editable();
             $grid->column('status', '状态')->switch();
+            $grid->column('is_commission', '是否分佣')->bool();
 
 
             $grid->filter(function (Grid\Filter $filter) {

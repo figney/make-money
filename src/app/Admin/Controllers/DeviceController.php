@@ -63,6 +63,15 @@ class DeviceController extends AdminController
                 $filter->where('user_id', function ($q) {
                     $q->where('user_id', (int)$this->input);
                 }, '用户ID')->width(2);
+                
+                $filter->where('channel_id', function ($q) {
+                    $q->where('channel_id', (int)$this->input);
+                }, '渠道ID')->width(2);
+
+                $filter->where('link_id', function ($q) {
+                    $q->where('link_id', (int)$this->input);
+                }, '链接ID')->width(2);
+
                 $filter->where('created_at', function ($q) {
                     $q->where('created_at', '>=', Carbon::make($this->input)->startOfDay());
                     $q->where('created_at', '<=', Carbon::make($this->input)->endOfDay());

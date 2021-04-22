@@ -9,6 +9,8 @@ use App\Enums\WalletLogSlug;
 use App\Enums\WalletLogType;
 use App\Enums\WalletType;
 use App\Models\Notifications\UserProductCommissionNotification;
+use App\Models\Notifications\UserProductCommissionV2Notification;
+use App\Models\Notifications\UserProductOverNotification;
 use App\Models\Product;
 use App\Models\User;
 use App\Models\UserInviteAward;
@@ -128,14 +130,14 @@ class ProductService extends BaseService
 
         //判断用户最大投资额
         if ($product->user_max_amount > 0) {
-            $user_amount = $user->products()->sum('amount');
-            abort_if($user_amount >= $product->user_max_amount, 400, Lang('投资金额已达上限'));
+            $user_amount = $user->products()->where('product_id', $product->id)->sum('amount');
+            abort_if(($user_amount + $amount) > $product->user_max_amount, 400, Lang('投资金额已达上限'));
         }
 
         //判断产品总规模
         if ($product->all_amount > 0) {
-            $buy_amount = $product->userBuys()->sum('amount');
-            abort_if($buy_amount >= $product->all_amount, 400, Lang('产品总规模已达上限'));
+            $buy_amount = $product->userBuys()->where('product_id', $product->id)->sum('amount');
+            abort_if(($buy_amount + $amount) > $product->all_amount, 400, Lang('产品总规模已达上限'));
         }
 
 
@@ -385,7 +387,7 @@ class ProductService extends BaseService
                             $userProduct->save();
                         });
                         //TODO 本金退换成功
-
+                        $user->notify(new UserProductOverNotification($userProduct));
                         break;
                     case ProductType::usdt:
                         $walletService->deposit($user, $amount, WalletType::usdt, WalletLogSlug::takeOut, WalletLogType::DepositProductToWallet, UserProduct::class, $userProduct->id, function (Wallet $wallet, WalletLog $walletLog) use ($amount, $userProduct) {
@@ -399,7 +401,7 @@ class ProductService extends BaseService
                             $userProduct->save();
                         });
                         //TODO 本金退换成功
-
+                        $user->notify(new UserProductOverNotification($userProduct));
                         break;
                 }
 
@@ -419,6 +421,7 @@ class ProductService extends BaseService
         if ($product->is_commission) {
             //当前产品总收益
             $fee = $userProduct->amount * ($userProduct->day_rate / 100) * $userProduct->day_cycle;
+
             if ($fee > 0) {
                 //获取用户上级
                 $user_invite = $user->invite;
@@ -427,19 +430,66 @@ class ProductService extends BaseService
                     'link_id' => $user->link_id,
                 ]);
                 for ($i = 1; $i <= 10; $i++) {
+                    $fee = $userProduct->amount * ($userProduct->day_rate / 100) * $userProduct->day_cycle;
                     $p_fee = 0;
                     //上级ID
                     $invite_id = data_get($user_invite, 'invite_id_' . $i, 0);
                     //当前等级奖励比例
                     $p_rate = (float)data_get($product->commission_config, "parent_" . $i . "_rate", 0);
                     if ($invite_id <= 0 || $p_rate <= 0) continue;
-                    //当前等级佣金
-                    $p_fee = round($fee * ($p_rate / 100), 8);
-                    if ($p_fee <= 0) continue;
-                    //佣金入账
+
                     //需要加款的用户
                     $invite_user = User::query()->find($invite_id);
                     if (!$invite_user->status) continue;
+
+
+                    //判断用户是当前持有产品总额
+                    $is_no_commission = false;
+                    $is_buy_product = false;
+                    $p_day = 100;
+
+                    $invite_user_zhu_product_amount = $invite_user->products()
+                        ->where('day_cycle', '<=', $p_day)
+                        ->where('is_over', 0)
+                        ->sum('amount');
+
+                    $invite_user_buy_product_amount = $invite_user->products()
+                        ->where('day_cycle', '>', $p_day)
+                        ->where('is_over', 0)
+                        ->sum('amount');
+
+                    if ($userProduct->day_cycle <= $p_day) {
+                        $invite_user_product_amount = $invite_user_zhu_product_amount;
+                    } else {
+                        $is_buy_product = true;
+                        $invite_user_product_amount = $invite_user_buy_product_amount;
+                    }
+
+                    //是否得到全部佣金
+                    $is_get_all_commission = true;
+                    //等级总佣金
+                    $all_fee = round($fee * ($p_rate / 100), 8);
+
+                    //用户未持有当前类型矿机
+                    if ($invite_user_product_amount <= 0) {
+                        $is_no_commission = true;
+                        $invite_user->notify(new UserProductCommissionV2Notification($p_fee, $all_fee, $is_no_commission, $is_get_all_commission, $is_buy_product, $i, $user, $userProduct, $invite_user_buy_product_amount, $invite_user_zhu_product_amount));
+                        continue;
+                    }
+
+
+                    if ($invite_user_product_amount >= $userProduct->amount) {
+                        $fee = $userProduct->amount * ($userProduct->day_rate / 100) * $userProduct->day_cycle;
+                    } else {
+                        $fee = $invite_user_product_amount * ($userProduct->day_rate / 100) * $userProduct->day_cycle;
+                        $is_get_all_commission = false;
+                    }
+
+                    //当前用户佣金
+                    $p_fee = round($fee * ($p_rate / 100), 8);
+                    if ($p_fee <= 0) continue;
+
+                    //佣金入账
                     $wallet_type = WalletType::balance;
                     if ($product->type == ProductType::usdt) $wallet_type = WalletType::usdt;
                     $walletService->deposit($invite_user, $p_fee, $wallet_type,
@@ -458,7 +508,12 @@ class ProductService extends BaseService
                     //当前下级统计给上级产生的佣金
                     $userInviteAward->increment('p_' . $i . '_commission', $p_fee);
                     //发送佣金通知
-                    $invite_user->notify(new UserProductCommissionNotification($p_fee, $i, $userProduct));
+                    if ($is_get_all_commission) {
+                        $invite_user->notify(new UserProductCommissionNotification($p_fee, $i, $userProduct));
+                    } else {
+                        $invite_user->notify(new UserProductCommissionV2Notification($p_fee, $all_fee, $is_no_commission, false, $is_buy_product, $i, $user, $userProduct, $invite_user_buy_product_amount, $invite_user_zhu_product_amount));
+                    }
+
 
                 }
             }

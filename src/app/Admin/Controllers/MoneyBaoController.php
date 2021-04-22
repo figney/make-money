@@ -42,6 +42,8 @@ class MoneyBaoController extends AdminController
 
             $grid->column('has')->bool();
             $grid->column('last_grant_time', '最后一次发放时间');
+            $grid->column('last_time', '余额最新存入时间');
+            $grid->column('give_last_time', '赠送金最新存入时间');
 
 
             $grid->filter(function (Grid\Filter $filter) {

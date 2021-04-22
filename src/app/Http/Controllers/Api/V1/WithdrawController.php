@@ -97,6 +97,8 @@ class WithdrawController extends ApiController
 
         $w_channel = WithdrawChannel::query()->where('status', true)->find($channel_id);
 
+        abort_if(!$w_channel, 400, Lang('ERROR'));
+
         $amount = (float)$request->input('amount');
 
         if ($w_channel->type == WithdrawChannelType::USDT_TRC20) {

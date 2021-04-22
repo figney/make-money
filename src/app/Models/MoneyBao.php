@@ -107,7 +107,7 @@ class MoneyBao extends Model
             //最后存入时间
             $last_time = $this->last_time ? $this->last_time : $this->last_grant_time;
             //已到24小时，需要手动领取收益
-            if (Carbon::make($last_time)->addDays()->lte(now())) {
+            if (Carbon::make($last_time)->addDays()->lte(now()) || !$this->last_time) {
                 $data['balance'] = [
                     'status' => MoneyBaoStatusType::over,
                     'fee' => $balance_fee,
@@ -125,7 +125,7 @@ class MoneyBao extends Model
             //最后存入时间
             $usdt_last_time = $this->usdt_last_time ? $this->usdt_last_time : $this->last_grant_time;
             //已到24小时，需要手动领取收益
-            if (Carbon::make($usdt_last_time)->addDays()->lte(now())) {
+            if (Carbon::make($usdt_last_time)->addDays()->lte(now()) || !$this->usdt_last_time) {
                 $data['usdt'] = [
                     'status' => MoneyBaoStatusType::over,
                     'fee' => $usdt_balance_fee,

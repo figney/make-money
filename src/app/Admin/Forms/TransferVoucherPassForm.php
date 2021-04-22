@@ -1,30 +1,34 @@
 <?php
 
-namespace App\Admin\Actions\Grid;
+namespace App\Admin\Forms;
 
-use App\Admin\Forms\TransferVoucherPassForm;
-use Dcat\Admin\Grid\RowAction;
-use Dcat\Admin\Widgets\Modal;
+use App\Enums\TransferVoucherCheckType;
+use App\Enums\WalletLogType;
+use App\Models\UserTransferVoucher;
+use App\Models\UserTransferVoucherCheckLog;
+use App\Models\Wallet;
+use App\Models\WalletLog;
+use App\Services\RechargeService;
+use Dcat\Admin\Contracts\LazyRenderable;
+use Dcat\Admin\Traits\LazyWidget;
+use Dcat\Admin\Widgets\Form;
 
-class TransferVoucherPassAction extends RowAction
+class TransferVoucherPassForm extends Form implements LazyRenderable
 {
-
-    protected $title = '审核通过';
-
-
-    public function render()
-    {
+    use LazyWidget;
 
 
-        return Modal::make()->lg()->body(TransferVoucherPassForm::make()->payload(['id' => $this->getKey()]))->title($this->title)->button("<span class='padding-right-sm text-success'>{$this->title}<span");
-    }
-
-    /*public function handle(Request $request)
+    public function handle(array $input)
     {
 
         try {
-            $id = $this->getKey();
+
+            $check_money = (float)data_get($input, 'check_money');
+            $id = $this->payload['id'];
             $userTransferVoucher = UserTransferVoucher::whereCheckType(TransferVoucherCheckType::UnderReview)->whereStatus(false)->findOrFail($id);
+
+            abort_if($check_money !== (float)$userTransferVoucher->amount, 400, "查账金额与订单金额不符");
+
             $action_type = WalletLogType::DepositTransferVoucherRecharge;
             $order = $userTransferVoucher->userRechargeOrder;
 
@@ -54,17 +58,23 @@ class TransferVoucherPassAction extends RowAction
 
             return $this->response()->success("操作成功")->refresh();
 
+
         } catch (\Exception $exception) {
             return $this->response()->error($exception->getMessage())->alert();
         }
+    }
 
-
-        return $this->response()->success('成功！')->refresh();
-    }*/
-
-    /*public function confirm()
+    public function form()
     {
-        return ['你确定要通过当前转账信息吗？', view('admin.TransferVoucherPassAction', $this->row)->render()];
-    }*/
+        $userTransferVoucher = UserTransferVoucher::query()->find($this->payload['id']);
+
+        //$this->display('转账金额')->default(number_format($userTransferVoucher->amount));
+        $this->display('转账人名称')->default($userTransferVoucher->user_name);
+        $this->display('转账卡号')->default($userTransferVoucher->card_number);
+        $this->display('银行名称')->default($userTransferVoucher->bank_name);
+
+        $this->number('check_money', '输入查账金额')->required();
+
+    }
 
 }

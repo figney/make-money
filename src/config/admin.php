@@ -11,7 +11,7 @@ return [
     | login page.
     |
     */
-    'name' => 'ANTS-泰国',
+    'name' => 'ANTS-印度',
 
     /*
     |--------------------------------------------------------------------------
@@ -22,7 +22,7 @@ return [
     | `img` tag, eg '<img src="http://logo-url" alt="Admin logo">'.
     |
     */
-    'logo' => 'ANTS-泰国',
+    'logo' => 'ANTS-印度',
 
     /*
     |--------------------------------------------------------------------------
@@ -34,7 +34,7 @@ return [
     | '<img src="http://logo-url" alt="Admin logo">'.
     |
     */
-    'logo-mini' => 'ANTS-泰国',
+    'logo-mini' => 'ANTS-印度',
 
     /*
      |--------------------------------------------------------------------------
@@ -88,7 +88,7 @@ return [
     | Html title for all pages.
     |
     */
-    'title' => 'ANTS-泰国 Admin',
+    'title' => 'ANTS-印度',
 
     /*
     |--------------------------------------------------------------------------
@@ -282,7 +282,7 @@ return [
     */
     'layout' => [
         // default, blue, blue-light, green
-        'color' => 'green',
+        'color' => 'default',
 
         'body_class' => '',
 

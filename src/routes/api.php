@@ -7,7 +7,7 @@ Route::prefix('v1')->middleware(['api', 'cors-should'])->namespace("App\Http\Con
 
 
     //$router->post('importLang', 'TestController@importLang');
-    //$router->get('updateLang', 'TestController@updateLang');
+    //$router->post('updateLang', 'TestController@updateLang');
     //$router->get('getLangList', 'TestController@getLangList');
 
 
@@ -69,6 +69,8 @@ Route::prefix('v1')->middleware(['api', 'cors-should'])->namespace("App\Http\Con
         $router->get("notifications", "UserController@notifications");
         $router->post("notificationRead", "UserController@notificationRead");
 
+        $router->get("getYesterdayProfit", "UserController@getYesterdayProfit");
+
 
         //钱包
         $router->post("walletTransform", "WalletController@transform");
@@ -113,6 +115,8 @@ Route::prefix('v1')->middleware(['api', 'cors-should'])->namespace("App\Http\Con
     $router->post('yudrsuPayOutBack', 'CallBackController@yudrsuPayOutBack')->name('yudrsuPayOutBack');
     $router->post('jstPayInBack', 'CallBackController@jstPayInBack')->name('jstPayInBack');
     $router->post('jstPayOutBack', 'CallBackController@jstPayOutBack')->name('jstPayOutBack');
+    $router->post('usdt1788PayInBack', 'CallBackController@usdt1788PayInBack')->name('usdt1788PayInBack');
+    $router->post('usdt1788PayOutBack', 'CallBackController@usdt1788PayOutBack')->name('usdt1788PayOutBack');
 
 });
 

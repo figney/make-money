@@ -29,6 +29,7 @@ class UserResource extends JsonResource
             'money_bao' => UserMoneyBaoResource::make($this->whenLoaded('moneyBao')),
             'product_data' => $this->productData(),
             'all_property' => $this->all_property,
+            'created_at' => $this->created_at,
         ];
 
 

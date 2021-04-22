@@ -9,6 +9,7 @@ use App\Enums\UserHookType;
 use App\Enums\WalletLogSlug;
 use App\Enums\WalletLogType;
 use App\Enums\WalletType;
+use App\Enums\WithdrawOrderStatusType;
 use App\Models\Notifications\UserAwardNotification;
 use App\Models\Task;
 use App\Models\User;
@@ -235,23 +236,33 @@ class TaskService extends BaseService
                     $amount = (float)$hookData->amount;
                     if ($hookData->wallet_type == WalletType::usdt) $amount = $amount * (float)Setting('usdt_money_rate');
 
-                    //判断提现是否参与
-                    $all_withdraw = 0;
-                    if ($task->check_withdraw) {
-                        $balance_withdraw = (float)$user->walletCount->balance_withdraw;
-                        $usdt_balance_withdraw = (float)$user->walletCount->usdt_balance_withdraw;
-                        //用户总提现金额
-                        $all_withdraw = $balance_withdraw + ($usdt_balance_withdraw * (float)Setting('usdt_money_rate'));
-                    }
+
                     //计算目标条件数值
-                    $check_condition = $userTask->target_condition + $amount - $all_withdraw;
+                    $check_condition = $userTask->target_condition + $amount;
                     if ($check_condition > 0) {
                         $userTask->target_condition = $check_condition;
                     } else {
                         $userTask->target_condition = 0;
                     }
+
+                    //判断提现是否参与
+                    $all_withdraw = 0;
+                    if ($task->check_withdraw) {
+                        $balance_withdraw = (float)$user->withdrawOrders()
+                            ->where('wallet_type', WalletType::balance)
+                            ->whereIn('order_status', [WithdrawOrderStatusType::CheckSuccess, WithdrawOrderStatusType::Checking, WithdrawOrderStatusType::Paying])
+                            ->sum('actual_amount');
+                        $usdt_balance_withdraw = (float)$user->withdrawOrders()
+                            ->where('wallet_type', WalletType::usdt)
+                            ->whereIn('order_status', [WithdrawOrderStatusType::CheckSuccess, WithdrawOrderStatusType::Checking, WithdrawOrderStatusType::Paying])
+                            ->sum('actual_amount');
+                        //用户总提现金额
+                        $all_withdraw = $balance_withdraw + ($usdt_balance_withdraw * (float)Setting('usdt_money_rate'));
+                    }
+                    $target_condition = $userTask->target_condition - $all_withdraw;
+
                     //满足任务目标
-                    if ($userTask->target_condition >= $task->target_condition) {
+                    if ($target_condition >= $task->target_condition) {
                         $this->achieveUserTask($user, $task, $userTask, WalletLogType::DepositTotalRechargeAward, $hookData);
                     } else {
                         $userTask->last_time = now();//最后一次完成时间
@@ -353,23 +364,37 @@ class TaskService extends BaseService
                     //获取充值金额
                     $amount = (float)$hookData->amount;
                     if ($hookData->wallet_type == WalletType::usdt) $amount = $amount * (float)Setting('usdt_money_rate');
-                    //判断提现是否参与
-                    $all_withdraw = 0;
-                    if ($task->check_withdraw) {
-                        $balance_withdraw = (float)$user->walletCount->balance_withdraw;
-                        $usdt_balance_withdraw = (float)$user->walletCount->usdt_balance_withdraw;
-                        //用户总提现金额
-                        $all_withdraw = $balance_withdraw + ($usdt_balance_withdraw * (float)Setting('usdt_money_rate'));
-                    }
+
                     //计算目标条件数值
-                    $check_condition = $userTask->target_condition + $amount - $all_withdraw;
+                    $check_condition = $userTask->target_condition + $amount;
                     if ($check_condition > 0) {
                         $userTask->target_condition = $check_condition;
                     } else {
                         $userTask->target_condition = 0;
                     }
+
+                    //判断提现是否参与
+                    $all_withdraw = 0;
+                    if ($task->check_withdraw) {
+                        $balance_withdraw = (float)$user->withdrawOrders()
+                            ->where('created_at', '>=', Carbon::today())
+                            ->where('wallet_type', WalletType::balance)
+                            ->whereIn('order_status', [WithdrawOrderStatusType::CheckSuccess, WithdrawOrderStatusType::Checking, WithdrawOrderStatusType::Paying])
+                            ->sum('actual_amount');
+                        $usdt_balance_withdraw = (float)$user->withdrawOrders()
+                            ->where('created_at', '>=', Carbon::today())
+                            ->where('wallet_type', WalletType::usdt)
+                            ->whereIn('order_status', [WithdrawOrderStatusType::CheckSuccess, WithdrawOrderStatusType::Checking, WithdrawOrderStatusType::Paying])
+                            ->sum('actual_amount');
+                        //用户总提现金额
+                        $all_withdraw = $balance_withdraw + ($usdt_balance_withdraw * (float)Setting('usdt_money_rate'));
+                    }
+
+                    $target_condition = $userTask->target_condition - $all_withdraw;
+
+
                     //计算今日是否完成目标
-                    if ($userTask->target_condition >= $task->target_condition) {
+                    if ($target_condition >= $task->target_condition) {
                         //今日目标已完成
                         $userTask->increment('ut_continuous_day');//连续天数 + 1
                         $userTask->last_achieve_time = now();//更新最后一次完成每天目标时间
@@ -451,16 +476,9 @@ class TaskService extends BaseService
                     //获取充值金额
                     $amount = (float)$hookData->amount;
                     if ($hookData->wallet_type == WalletType::usdt) $amount = $amount * (float)Setting('usdt_money_rate');
-                    //判断提现是否参与
-                    $all_withdraw = 0;
-                    if ($task->check_withdraw) {
-                        $balance_withdraw = (float)$user->walletCount->balance_withdraw;
-                        $usdt_balance_withdraw = (float)$user->walletCount->usdt_balance_withdraw;
-                        //用户总提现金额
-                        $all_withdraw = $balance_withdraw + ($usdt_balance_withdraw * (float)Setting('usdt_money_rate'));
-                    }
+
                     //计算目标条件数值
-                    $check_condition = $userTask->target_condition + $amount - $all_withdraw;
+                    $check_condition = $userTask->target_condition + $amount;
                     if ($check_condition > 0) {
                         $userTask->target_condition = $check_condition;
                     } else {
@@ -474,8 +492,28 @@ class TaskService extends BaseService
 
                     $day_target_condition = $start_amount + $increase_amount * $userTask->ut_continuous_day;
 
+
+                    //判断提现是否参与
+                    $all_withdraw = 0;
+                    if ($task->check_withdraw) {
+                        $balance_withdraw = (float)$user->withdrawOrders()
+                            ->where('created_at', '>=', Carbon::today())
+                            ->where('wallet_type', WalletType::balance)
+                            ->whereIn('order_status', [WithdrawOrderStatusType::CheckSuccess, WithdrawOrderStatusType::Checking, WithdrawOrderStatusType::Paying])
+                            ->sum('actual_amount');
+                        $usdt_balance_withdraw = (float)$user->withdrawOrders()
+                            ->where('created_at', '>=', Carbon::today())
+                            ->where('wallet_type', WalletType::usdt)
+                            ->whereIn('order_status', [WithdrawOrderStatusType::CheckSuccess, WithdrawOrderStatusType::Checking, WithdrawOrderStatusType::Paying])
+                            ->sum('actual_amount');
+                        //用户总提现金额
+                        $all_withdraw = $balance_withdraw + ($usdt_balance_withdraw * (float)Setting('usdt_money_rate'));
+                    }
+
+                    $target_condition = $userTask->target_condition - $all_withdraw;
+
                     //计算今日是否完成目标
-                    if ($userTask->target_condition >= $day_target_condition) {
+                    if ($target_condition >= $day_target_condition) {
                         //今日目标已完成
                         $userTask->increment('ut_continuous_day');//连续天数 + 1
                         $userTask->last_achieve_time = now();//更新最后一次完成每天目标时间

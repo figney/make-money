@@ -130,7 +130,7 @@ class PublicController extends ApiController
                 'who' => $faker->name,
                 'action' => collect($actions)->random(),
                 'friend' => $faker->name,
-                'fee' => $faker->numberBetween(179, 8968),
+                'fee' => $faker->numberBetween(1368, 68439),
             ];
 
             $list->add($item);

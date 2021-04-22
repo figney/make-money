@@ -20,7 +20,7 @@ use Tymon\JWTAuth\Contracts\JWTSubject;
 
 class User extends Authenticatable implements JWTSubject
 {
-    use UserInviteTraits, UserNotifiable, HasDateTimeFormatter, HybridRelations, AdminDataScope;
+    use UserInviteTraits, UserNotifiable, HasDateTimeFormatter, HybridRelations,AdminDataScope;
 
     protected $connection = 'mysql';
 
@@ -122,7 +122,6 @@ class User extends Authenticatable implements JWTSubject
     {
         return $this->hasMany(Device::class);
     }
-
     //用户设备IP
     public function ips()
     {

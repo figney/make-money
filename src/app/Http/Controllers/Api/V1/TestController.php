@@ -17,10 +17,13 @@ use App\Models\Notifications\UserDeductAwardNotification;
 use App\Models\Notifications\UserEarningsNotification;
 use App\Models\Notifications\UserFriendDeductAwardNotification;
 use App\Models\Notifications\UserProductCommissionNotification;
+use App\Models\Notifications\UserProductCommissionV2Notification;
+use App\Models\Notifications\UserProductOverNotification;
 use App\Models\Notifications\UserWithdrawRefundNotification;
 use App\Models\Notifications\UserWithdrawRejectNotification;
 use App\Models\Notifications\UserWithdrawToPayErrorNotification;
 use App\Models\Notifications\UserWithdrawToPayNotification;
+use App\Models\Notifications\UserYesterdayProfitNotification;
 use App\Models\Task;
 use App\Models\UserProduct;
 use App\Models\UserRechargeOrder;
@@ -69,7 +72,6 @@ class TestController extends ApiController
         }
 
     }
-
     // public function updateLang(Request $request){
     //     $json = '{}';
     //         try {
@@ -94,7 +96,6 @@ class TestController extends ApiController
     //     }
 
     // }
-
     /**
      * 获取语言-hqyy
      * @queryParam local  required 语言包
@@ -183,7 +184,7 @@ class TestController extends ApiController
 
         switch ($type) {
             case "RechargeOrderSuccessNotification":
-                $user->notify(new RechargeOrderSuccessNotification(UserRechargeOrder::query()->first()));
+                $user->notify(new RechargeOrderSuccessNotification(UserRechargeOrder::query()->inRandomOrder()->first()));
                 break;
             case "TransferVoucherRejectNotification":
                 $user->notify(new TransferVoucherRejectNotification(UserTransferVoucher::query()->first()));
@@ -218,7 +219,27 @@ class TestController extends ApiController
             case "UserProductCommissionNotification":
                 $user->notify(new UserProductCommissionNotification(100, 1, UserProduct::query()->first()));
                 break;
+            case "UserProductOverNotification":
+                $user->notify(new UserProductOverNotification(UserProduct::query()->first()));
+                break;
+            case "UserYesterdayProfitNotification":
+                $user->notify(new UserYesterdayProfitNotification(100, 300));
+                break;
+            case "UserProductCommissionV2Notification":
+
+                $up = UserProduct::query()->latest()->first();
+
+                $type = 1;
+
+                if ($type == 0) $user->notify(new UserProductCommissionV2Notification(0, 100, true, false, $up->day_cycle > 100, 1, $up->user, $up, 0, 0));
+
+                if ($type == 1) $user->notify(new UserProductCommissionV2Notification(50, 100, false, false, $up->day_cycle > 100, 1, $up->user, $up, 50000, 20000));
+
+
+                break;
         }
+
+        return $user->id;
 
 
     }

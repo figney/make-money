@@ -4,13 +4,18 @@
 namespace App\Http\Controllers\Api\V1;
 
 
+use App\Enums\WalletLogSlug;
+use App\Enums\WalletType;
 use App\Http\Controllers\Api\ApiController;
 use App\Http\Resources\FriendResource;
 use App\Http\Resources\NotificationResource;
 use App\Http\Resources\UserAwardRecordResource;
 use App\Http\Resources\UserResource;
+use App\Models\Notification;
+use App\Models\Notifications\UserYesterdayProfitNotification;
 use App\Models\UserAwardRecord;
 use App\Models\UserSignInLog;
+use App\Models\WalletLog;
 use App\Services\UserHookService;
 use App\Services\UserService;
 use Carbon\Carbon;
@@ -402,6 +407,63 @@ class UserController extends ApiController
         } finally {
             optional($lock)->release();
         }
+    }
+
+    /**
+     * 用户昨日收益通知-zrsytz
+     * @group 用户-User
+     * @authenticated
+     */
+    public function getYesterdayProfit()
+    {
+
+        $user = $this->user();
+
+
+        $lock = \Cache::lock('getYesterdayProfit:' . $user->id, 10);
+        try {
+            $lock->block(10);
+
+            if (Carbon::make($user->created_at)->gt(Carbon::today())) {
+                return $this->response([]);
+            }
+
+            $is_send = Notification::query()->where('user_id', $user->id)
+                ->where('type', 'UserYesterdayProfitNotification')
+                ->where('created_at', '>=', Carbon::today())
+                ->exists();
+
+            if (!$is_send) {
+
+                $profit = $user->walletLogs()
+                    ->where('wallet_type', WalletType::balance)
+                    ->where('wallet_slug', WalletLogSlug::interest)
+                    ->whereBetween('created_at', [Carbon::yesterday()->startOfDay(), Carbon::yesterday()->endOfDay()])
+                    ->sum('fee');
+
+                $commission = $user->walletLogs()
+                    ->where('wallet_type', WalletType::balance)
+                    ->where('wallet_slug', WalletLogSlug::commission)
+                    ->whereBetween('created_at', [Carbon::yesterday()->startOfDay(), Carbon::yesterday()->endOfDay()])
+                    ->sum('fee');
+
+
+                $user->notify(new UserYesterdayProfitNotification($profit, $commission));
+
+                return $this->response([
+                    'profit' => $profit,
+                    'commission' => $commission,
+                ]);
+            }
+
+            return $this->response([]);
+
+        } catch (\Exception $exception) {
+            return $this->responseException($exception);
+        } finally {
+            optional($lock)->release();
+        }
+
     }
 
 
