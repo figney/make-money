@@ -152,6 +152,7 @@ class YudrsuService extends BaseService
 
         $data['acc_no'] = data_get($userWithdrawOrder->input_data, "acc_no");
         $data['acc_name'] = data_get($userWithdrawOrder->input_data, "acc_name");
+        $data['province'] = data_get($userWithdrawOrder->input_data, "province");
         $data['ccy_no'] = Setting('fiat_code');
         $data['order_amount'] = (float)$userWithdrawOrder->actual_amount;
         $data['bank_code'] = $userWithdrawOrder->withdrawChannelItem->bank_code;
