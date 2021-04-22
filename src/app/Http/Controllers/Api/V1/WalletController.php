@@ -34,8 +34,6 @@ class WalletController extends ApiController
     public function transform(Request $request)
     {
         try {
-            abort(400, Lang('ERROR'));
-
             $this->validatorData($request->all(), [
                 'fee' => 'required|numeric',
                 'to_balance' => 'required|boolean'

@@ -29,6 +29,8 @@ class ShareController extends Controller
 
         $appShareInfo = Share::query()->inRandomOrder()->first();
 
+        if ($params == "/") $params = "";
+
         $data['app_id'] = '';
         $data['url'] = url()->current() . $request->getRequestUri();
         $data['site_name'] = '';

@@ -21,6 +21,7 @@ use App\Services\OnlinePayService;
 use App\Services\Pay\FPayTHBService;
 use App\Services\Pay\IPayIndianService;
 use App\Services\Pay\JstPayService;
+use App\Services\Pay\Usdt1788Service;
 use App\Services\Pay\YudrsuService;
 use App\Services\RechargeService;
 use Carbon\Carbon;
@@ -193,6 +194,13 @@ class RechargeController extends ApiController
                     }
                 case PlatformType::JstPay:
                     $pay_url = JstPayService::make()->payIn($user, $order, $rechargeChannelList, $redirect_url);
+                    if ($pay_url) {
+                        $res['pay_url'] = $pay_url;
+                        $res['order_sn'] = $order->order_sn;
+                        return $this->response($res);
+                    }
+                case PlatformType::USDT1788:
+                    $pay_url = Usdt1788Service::make()->payIn($user, $order, $rechargeChannelList, $redirect_url);
                     if ($pay_url) {
                         $res['pay_url'] = $pay_url;
                         $res['order_sn'] = $order->order_sn;

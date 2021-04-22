@@ -62,8 +62,8 @@ class TestController extends ApiController
             $slug = Str::upper($slug);
             $slug = str_replace("-", "_", $slug);
 
-            // Todo: 语言ID
-            LanguageConfig::query()->where('slug', $slug)->update(['content->IN' => $content]);
+
+            LanguageConfig::query()->where('slug', $slug)->update(['content->VI' => $content]);
 
 
             return $this->responseMessage('success');
@@ -72,30 +72,7 @@ class TestController extends ApiController
         }
 
     }
-    // public function updateLang(Request $request){
-    //     $json = '{}';
-    //         try {
-    //             $j = array();
-    //             $j = json_decode($json,true);
-    //             foreach ($j as $slug => $content)
-    //             {
-    //                 //echo "questions 2 : ".$key."->".$value." ";
-    //                 if($slug == null or $content == null) continue;
 
-    //                 $slug = Str::upper($slug);
-    //                 $slug = str_replace("-", "_", $slug);
-
-
-    //                 LanguageConfig::query()->where('slug', $slug)->update(['content->MY' => $content]);
-    //             }
-
-
-    //         return $this->responseMessage('success');
-    //     } catch (\Exception $exception) {
-    //         return $this->responseException($exception);
-    //     }
-
-    // }
     /**
      * 获取语言-hqyy
      * @queryParam local  required 语言包

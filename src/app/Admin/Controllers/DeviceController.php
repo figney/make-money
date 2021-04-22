@@ -47,8 +47,8 @@ class DeviceController extends AdminController
             $grid->column('height')->filter();
             $grid->column('os')->filter();
             $grid->column('timezone')->filter();
-            $grid->column('channel_id')->filter();
-            $grid->column('link_id')->filter();
+            $grid->column('channel_id');
+            $grid->column('link_id');
             $grid->column('source')->filter();
             $grid->column('source_url')->display(function ($v) {
 
@@ -63,7 +63,6 @@ class DeviceController extends AdminController
                 $filter->where('user_id', function ($q) {
                     $q->where('user_id', (int)$this->input);
                 }, '用户ID')->width(2);
-                
                 $filter->where('channel_id', function ($q) {
                     $q->where('channel_id', (int)$this->input);
                 }, '渠道ID')->width(2);
@@ -71,7 +70,6 @@ class DeviceController extends AdminController
                 $filter->where('link_id', function ($q) {
                     $q->where('link_id', (int)$this->input);
                 }, '链接ID')->width(2);
-
                 $filter->where('created_at', function ($q) {
                     $q->where('created_at', '>=', Carbon::make($this->input)->startOfDay());
                     $q->where('created_at', '<=', Carbon::make($this->input)->endOfDay());

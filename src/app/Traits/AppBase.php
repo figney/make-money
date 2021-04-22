@@ -140,8 +140,7 @@ trait AppBase
 
     protected function faker(): Generator
     {
-        //$local = AppService::make()->local(null, true);
-        $local = "en_IN";
+        $local = config('env.local');
         return Factory::create($local);
     }
 }

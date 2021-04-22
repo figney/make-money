@@ -23,6 +23,6 @@ class GetPayZjrAddress implements ShouldQueue
 
     public function handle()
     {
-        //LaoSunService::make()->setChannel($this->rechargeChannel)->createAddress($this->rechargeChannel->id);
+        LaoSunService::make()->setChannel($this->rechargeChannel)->createAddress($this->rechargeChannel->id);
     }
 }

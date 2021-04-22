@@ -94,7 +94,7 @@ class InitController extends ApiController
             'mb_give_rate' => Setting('mb_give_rate'),
         ];
 
-        $wallet_type = [WalletType::give, WalletType::balance];
+        $wallet_type = [WalletType::give, WalletType::balance, WalletType::usdt];
 
         $has_login = auth('api')->check();
 
@@ -105,7 +105,7 @@ class InitController extends ApiController
             $res['user'] = UserResource::make($user);
 
             if ($user->hasRecharge()) {
-                $wallet_type = [WalletType::balance,  WalletType::give,];
+                $wallet_type = [WalletType::balance, WalletType::usdt, WalletType::give,];
             }
         }
 

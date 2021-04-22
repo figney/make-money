@@ -16,6 +16,7 @@ use Dcat\Admin\Http\Controllers\AdminController;
 class UserRechargeOrderController extends AdminController
 {
     use Base;
+
     protected $title = "充值";
 
     /**
@@ -30,7 +31,7 @@ class UserRechargeOrderController extends AdminController
 
             $grid->model()->with(['rechargeChannel', 'user', 'user.wallet', 'user.walletCount', 'user.withdrawOrdersChecking'])->orderBy('id', 'desc');
 
-            if (!$this->isAdministrator()){
+            if (!$this->isAdministrator()) {
                 $grid->model()->byChannel();
             }
 
@@ -67,7 +68,7 @@ class UserRechargeOrderController extends AdminController
             ])->minWidth(100);
             $grid->column('created_at')->minWidth(180);
 
-            $grid->fixColumns(0,0);
+            $grid->fixColumns(0, 0);
 
             $grid->filter(function (Grid\Filter $filter) {
                 $filter->equal('user_id', '用户ID')->width(1);
@@ -82,7 +83,11 @@ class UserRechargeOrderController extends AdminController
             });
 
             $grid->disableDeleteButton();
-            $grid->disableEditButton();
+            if (!\Admin::user()->isAdministrator()) {
+                $grid->disableEditButton();
+            }
+
+
             $grid->disableCreateButton();
         });
     }
@@ -109,7 +114,7 @@ class UserRechargeOrderController extends AdminController
     protected function form()
     {
         return Form::make(new UserRechargeOrder(), function (Form $form) {
-
+            $form->select('order_status')->options(OrderStatusType::asSelectArray());
         });
     }
 }

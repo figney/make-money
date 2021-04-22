@@ -27,9 +27,8 @@ class GetCoinAddress extends Command
 
     public function handle()
     {
-        return;
-
         $fz = 50;
+
         $rc = RechargeChannel::query()->where('slug', PlatformType::LaoSun)->where('type', RechargeChannelType::USDT_TRC20)->where('status', 1)->first();
         //获取当前渠道可用地址
         $count = CoinAddress::query()->disableCache()->where('recharge_channel_id', $rc->id)->where('user_id', 0)->count();

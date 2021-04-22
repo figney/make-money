@@ -105,25 +105,28 @@ class UserTransferVoucherController extends AdminController
             //$grid->fixColumns(0, -1);
 
             $grid->setActionClass(\Dcat\Admin\Grid\Displayers\Actions::class);
-            $grid->disableEditButton();
+
+            if (!\Admin::user()->isAdministrator()) {
+                $grid->disableEditButton();
+            }
+
             $grid->disableDeleteButton();
             $grid->disableCreateButton();
 
-            if (request('created_at')){
+            if (request('created_at')) {
 
                 $created_at = request('created_at');
 
                 $amount_count = UserTransferVoucher::query()
-                    ->whereDate('created_at',Carbon::make($created_at))
-                    ->where('check_type',TransferVoucherCheckType::Pass)
+                    ->whereDate('created_at', Carbon::make($created_at))
+                    ->where('check_type', TransferVoucherCheckType::Pass)
                     ->noTester()
                     ->sum('amount');
 
 
-
                 $money = ShowMoney($amount_count);
 
-                $content=<<<HTML
+                $content = <<<HTML
 <div class="alert alert-info">
 当前日前入账统计：
 <div class="">$money</div>
@@ -147,23 +150,7 @@ HTML;
     protected function detail($id)
     {
         return Show::make($id, new UserTransferVoucher(), function (Show $show) {
-            $show->field('id');
-            $show->field('user_id');
-            $show->field('channel_item_id');
-            $show->field('image');
-            $show->field('image_md5');
-            $show->field('user_name');
-            $show->field('card_number');
-            $show->field('bank_name');
-            $show->field('amount');
-            $show->field('time');
-            $show->field('status');
-            $show->field('check_type');
-            $show->field('check_slug');
-            $show->field('check_time');
-            $show->field('wallet_log_id');
-            $show->field('created_at');
-            $show->field('updated_at');
+
         });
     }
 
@@ -174,25 +161,9 @@ HTML;
      */
     protected function form()
     {
-        return Form::make(new UserTransferVoucher(), function (Form $form) {
-            $form->display('id');
-            $form->text('user_id');
-            $form->text('channel_item_id');
-            $form->text('image');
-            $form->text('image_md5');
-            $form->text('user_name');
-            $form->text('card_number');
-            $form->text('bank_name');
-            $form->text('amount');
-            $form->text('time');
-            $form->text('status');
-            $form->text('check_type');
-            $form->text('check_slug');
-            $form->text('check_time');
-            $form->text('wallet_log_id');
 
-            $form->display('created_at');
-            $form->display('updated_at');
+        if (\Admin::user()->isAdministrator()) return Form::make(new UserTransferVoucher(), function (Form $form) {
+            $form->select('check_type')->options(TransferVoucherCheckType::asSelectArray());
         });
     }
 }

@@ -18,16 +18,21 @@ class WithdrawOrderRefundAction extends RowAction
     public function handle(Request $request)
     {
 
+        $id = $this->getKey();
+
+        $lock = \Cache::lock("WithdrawOrderRefundAction:" . $id, 10);
         try {
+            $lock->block(10);
 
-
-            $userWithdrawOrder = UserWithdrawOrder::query()->find($this->getKey());
+            $userWithdrawOrder = UserWithdrawOrder::query()->find($id);
             abort_if(!in_array($userWithdrawOrder->order_status, [WithdrawOrderStatusType::CheckError, WithdrawOrderStatusType::PayError]), 400, '当前订单状态无法操作');
             //退款操作
             WithdrawService::make()->refundWithdrawOrder($userWithdrawOrder);
             return $this->response()->success("操作成功")->refresh();
         } catch (\Exception $exception) {
             return $this->response()->error($exception->getMessage())->alert();
+        } finally {
+            optional($lock)->release();
         }
     }
 

@@ -52,7 +52,7 @@ class Kernel extends ConsoleKernel
 
 
         //获取usdt地址
-        //$schedule->command('command:GetCoinAddress')->runInBackground()->everyMinute();
+        $schedule->command('command:GetCoinAddress')->runInBackground()->everyMinute();
 
         //每天凌晨通知页面刷新
         $schedule->command('command:DayReload')->runInBackground()->daily();

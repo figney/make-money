@@ -28,10 +28,6 @@ $col = 3;
     <div class="row">
         <div class="item col-{{$col}}">进行中：{{(float) $user->products()->where('is_over',0)->sum('amount')}}</div>
     </div>
-    <h4 class="mt-1">矿机信息</h4>
-    <div class="row">
-        <div class="item col-{{$col}}">进行中：{{(float) $user->products()->where('is_over',0)->sum('amount')}}</div>
-    </div>
     <h4 class="mt-1">邀请信息</h4>
     <div class="row">
 
