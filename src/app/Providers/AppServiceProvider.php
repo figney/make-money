@@ -29,12 +29,16 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot()
     {
-        //
-        $setting = Setting::query()->where('channel_id', 1)->firstOrFail();
+        
+        try {
+            $setting = Setting::query()->where('channel_id', 1)->firstOrFail();
 
-        collect($setting)->each(function ($value, $key) {
-            config(['setting.' . $key => $value]);
-        });
+            collect($setting)->each(function ($value, $key) {
+                config(['setting.' . $key => $value]);
+            });
+        } catch (\Throwable $th) {
+            //throw $th;
+        }
 
     }
 }

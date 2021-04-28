@@ -1,4 +1,4 @@
-FROM 192.168.6.2:5000/runtimes/php:8.0.3-apache as base
+FROM 192.168.6.2:5000/runtimes/php:8.0.3-apache as builder
 
 #
 #--------------------------------------------------------------------------
@@ -30,8 +30,13 @@ FROM 192.168.6.2:5000/runtimes/php:8.0.3-apache
 
 EXPOSE 80
 
-WORKDIR /usr/www/html
+WORKDIR /var/www/html
 
-COPY --from=base /scripts .
+ENV APACHE_DOCUMENT_ROOT /var/www/html
+
+RUN sed -ri -e 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/sites-available/*.conf
+RUN sed -ri -e 's!/var/www/!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/apache2.conf /etc/apache2/conf-available/*.conf
+
+COPY --from=builder /scripts .
 
 CMD ["apache2-foreground"]
