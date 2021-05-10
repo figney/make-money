@@ -33,6 +33,7 @@ class MoneyBaoService extends BaseService
 
         abort_if($this->getStatus($user, $wallet_type), 400, Lang('收益未领取无法存入'));
 
+        abort_if($fee <= 0, 400, "Error");
 
         switch ($wallet_type) {
             case WalletType::balance:
@@ -95,6 +96,7 @@ class MoneyBaoService extends BaseService
     {
         $walletService = new WalletService();
         abort_if(!$walletService->checkWalletType($wallet_type), 400, Lang("类型错误"));
+        abort_if($fee <= 0, 400, "Error");
 
         \DB::beginTransaction();
         $moneyBao = MoneyBao::query()->where('user_id', $user->id)->lockForUpdate()->first();
